@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+
+<html dir="ltr" lang="en-US">
+<head><meta content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'" http-equiv="Content-Security-Policy"/>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Cowork Prompt Builder</title>
+<meta content="light" name="color-scheme"/>
+
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #e1f1f1; --surface: #ffffff; --text: #132b31; --muted: #405f66;
+  --edge: #9abfc3; --primary: #08646c; --primary-hover: #064d54; --on-primary: #ffffff;
+  --focus: #08646c; --soft: #edf7f7;
+  --question: #075985; --input: #115e59; --output: #1e40af;
+  --judgement: #5b21b6; --boundary: #9f1239; --badge-text: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#10272c; --surface:#17353b; --text:#f3fbfc; --muted:#bfd7dc;
+    --edge:#52787f; --primary:#75d9de; --primary-hover:#9ce8eb; --on-primary:#10272c;
+    --focus:#75d9de; --soft:#203f46; }
+}
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--text); font: 1rem/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; }
+button,textarea { font:inherit; }
+button { cursor:pointer; min-block-size:44px; }
+button:disabled { cursor:not-allowed; }
+:focus-visible { outline:3px solid var(--focus); outline-offset:4px; }
+.skip { position:absolute; inset-block-start:0.5rem; inset-inline-start:0.5rem; transform:translateY(-180%); background:var(--surface); color:var(--text); padding:0.6rem 1rem; z-index:5; }
+.skip:focus { transform:translateY(0); }
+main { max-inline-size:1180px; margin-inline:auto; padding:3rem 2rem; }
+h1 { font-family:Georgia,Cambria,"Times New Roman",serif; font-size:clamp(2.1rem,5vw,3.35rem); font-weight:400; line-height:1.1; margin:0 0 1rem; }
+h2 { font-family:Georgia,Cambria,"Times New Roman",serif; font-size:1.6rem; font-weight:400; line-height:1.3; margin:0; }
+p { margin-block:0 0.75rem; }
+.instructions { max-inline-size:70ch; margin-block-end:1.2rem; color:var(--muted); }
+.legend { display:flex; flex-wrap:wrap; gap:0.55rem 1rem; margin:0; padding:0; list-style:none; }
+.legend li { display:flex; align-items:center; gap:0.5rem; font-size:0.85rem; }
+.badge { display:inline-block; padding:0.25rem 0.55rem; border:1px solid transparent; border-radius:0.2rem; color:var(--badge-text); font-size:0.75rem; font-weight:700; letter-spacing:0.025em; }
+[data-kind="Question"] { --portion:var(--question); }
+[data-kind="Input"] { --portion:var(--input); }
+[data-kind="Output"] { --portion:var(--output); }
+[data-kind="Judgement"] { --portion:var(--judgement); }
+[data-kind="Boundary"] { --portion:var(--boundary); }
+.badge[data-kind] { background:var(--portion); }
+.tabs { display:flex; flex-wrap:wrap; gap:0.6rem; margin-block:2rem; }
+.tabs button { background:var(--surface); color:var(--text); border:1px solid var(--edge); border-radius:0.45rem; padding:0.75rem 1rem; text-align:start; }
+.tabs button[aria-selected="true"] { background:var(--primary); color:var(--on-primary); border-color:var(--primary); font-weight:650; }
+.number { display:inline-block; margin-inline-end:0.5rem; font-variant-numeric:tabular-nums; }
+.workbench { display:grid; grid-template-columns:minmax(0,0.8fr) minmax(0,1.4fr); gap:2rem; align-items:start; }
+.context,.preview { min-inline-size:0; }
+.fields { display:grid; gap:1.3rem; margin-block:1.4rem; }
+.field { display:grid; gap:0.45rem; }
+label { font-weight:650; }
+.hint,.privacy,.copy-note { font-size:0.85rem; color:var(--muted); }
+.hint { margin:0; }
+textarea { inline-size:100%; min-block-size:6rem; resize:vertical; border:1px solid var(--edge); border-radius:0.45rem; padding:0.7rem 0.8rem; background:var(--surface); color:var(--text); line-height:1.5; }
+textarea:focus { border-color:var(--primary); }
+textarea:disabled { opacity:1; background:var(--soft); }
+.preview { background:var(--surface); border:1px solid var(--edge); border-radius:0.55rem; padding:1.65rem; }
+.preview-header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:1rem; margin-block-end:1.5rem; }
+.copy { background:var(--primary); color:var(--on-primary); border:1px solid var(--primary); border-radius:0.45rem; padding:0.65rem 1rem; font-weight:650; }
+.copy:hover:not(:disabled) { background:var(--primary-hover); }
+.copy:disabled { background:var(--soft); color:var(--muted); border-color:var(--edge); }
+.portions { display:grid; gap:1.35rem; }
+.portion { border-inline-start:3px solid var(--portion); padding-inline-start:0.85rem; }
+.portion p { white-space:pre-wrap; overflow-wrap:anywhere; margin-block:0.5rem 0; }
+.copy-note { border-block-start:1px solid var(--edge); padding-block-start:1rem; margin-block:1.4rem 0; min-block-size:3rem; }
+.manual { margin-block-start:1rem; }
+.manual textarea { min-block-size:17rem; margin-block-start:0.5rem; }
+.privacy { border-block-start:1px solid var(--edge); padding-block-start:1rem; margin:0; }
+.empty-hint { color:var(--muted); }
+[hidden] { display:none !important; }
+@media (max-width:800px) { main { padding:2rem 1rem; } .workbench { grid-template-columns:1fr; gap:1.5rem; } .preview { padding:1.15rem; } .legend { gap:0.5rem; } .legend li { flex-wrap:wrap; } }
+@media (forced-colors:active) { body,textarea,.preview,.tabs button { background:Canvas; color:CanvasText; } .badge[data-kind] { background:Canvas; color:CanvasText; border-color:CanvasText; } .portion { border-color:CanvasText; } .copy,.tabs button[aria-selected="true"] { background:Highlight; color:HighlightText; border-color:Highlight; } :focus-visible { outline-color:Highlight; } .copy:disabled { color:GrayText; border-color:GrayText; } }
+@media print { :root { --bg:#ffffff; --surface:#ffffff; --text:#000000; --muted:#444444; --edge:#999999; } @page { margin:0.6in; } .no-print,.skip { display:none !important; } main { padding:0; } .workbench { display:block; } .preview { border:0; padding:0; } .portion { break-inside:avoid; } }
+</style></head>
+<body>
+<a class="skip" href="#workspace">Skip to prompt builder</a>
+<main id="workspace" tabindex="-1">
+<header>
+<h1>Cowork Prompt Builder</h1>
+<p class="instructions">Choose a prompt, fill in its bracketed context, then copy the finished text into your own Cowork. Name sources that Cowork can access.</p>
+<ul aria-label="The five parts of a Cowork prompt" class="legend">
+<li><span class="badge" data-kind="Question">Question</span><span>The task</span></li>
+<li><span class="badge" data-kind="Input">Input</span><span>The evidence</span></li>
+<li><span class="badge" data-kind="Output">Output</span><span>The deliverable</span></li>
+<li><span class="badge" data-kind="Judgement">Judgement</span><span>How to assess it</span></li>
+<li><span class="badge" data-kind="Boundary">Boundary</span><span>The limits</span></li>
+</ul>
+</header>
+<div aria-label="Choose a prompt" class="tabs no-print" role="tablist">
+<button aria-controls="prompt-panel" aria-selected="true" id="tab-0" role="tab" tabindex="0" type="button"><span class="number">1.</span>Meeting brief</button>
+<button aria-controls="prompt-panel" aria-selected="false" id="tab-1" role="tab" tabindex="-1" type="button"><span class="number">2.</span>Decision memo</button>
+<button aria-controls="prompt-panel" aria-selected="false" id="tab-2" role="tab" tabindex="-1" type="button"><span class="number">3.</span>Operating review</button>
+</div>
+<div aria-labelledby="tab-0" class="workbench" id="prompt-panel" role="tabpanel">
+<section aria-labelledby="fields-heading" class="context no-print">
+<h2 id="fields-heading">Fill in your context</h2>
+<form id="context-form">
+<div class="fields" id="fields"></div>
+</form>
+<p class="privacy">Your entries stay in this page while it is open. Nothing is sent, saved, or collected by the page. Refreshing clears your entries.</p>
+</section>
+<section aria-labelledby="prompt-heading" class="preview">
+<div class="preview-header">
+<h2 id="prompt-heading">Your prompt</h2>
+<button class="copy no-print" disabled="" id="copy" type="button">Copy prompt</button>
+</div>
+<div class="portions" id="portions"></div>
+<p aria-live="polite" class="copy-note no-print" id="copy-status" role="status">Fill in all fields before copying.</p>
+<div class="manual no-print" hidden="" id="manual">
+<label for="manual-copy">Prompt text to copy</label>
+<textarea id="manual-copy" readonly="" spellcheck="false"></textarea>
+</div>
+</section>
+</div>
+<noscript><p>This page needs JavaScript to fill in and copy prompts. It does not require a sign-in or connection to your work account.</p></noscript>
+</main>
+<script>
+'use strict';
+const templates = [{"title": "Meeting brief", "fields": [{"key": "meeting", "label": "Upcoming decision or meeting", "token": "specific upcoming decision or meeting", "hint": "Name the actual meeting or leadership decision."}, {"key": "sources", "label": "Two or three files or accessible threads", "token": "two or three files or explicit accessible threads", "hint": "Use exact file names, accessible links, or clearly identified threads."}, {"key": "range", "label": "Date range", "token": "date range", "hint": "Use explicit start and end dates."}], "portions": [{"kind": "Question", "text": "Prepare me for [specific upcoming decision or meeting]. "}, {"kind": "Input", "text": "Use only [two or three files or explicit accessible threads] from [date range]. "}, {"kind": "Output", "text": "Create a one-page Word brief with the situation, three implications, contrary evidence, unknowns, and three leadership questions. Include a five-bullet update as document text. "}, {"kind": "Judgement", "text": "Cite evidence, distinguish fact from inference, and state missing information. "}, {"kind": "Boundary", "text": "Do not send anything, post messages, book meetings, or change source records."}]}, {"title": "Decision memo", "fields": [{"key": "sources", "label": "Source set or current business case", "token": "the same source set or a current business case", "hint": "Name the sources explicitly, especially when starting a new Cowork conversation."}, {"key": "decision", "label": "Decision to compare options for", "token": "decision", "hint": "Describe the decision you need to make."}], "portions": [{"kind": "Input", "text": "Using [the same source set or a current business case], "}, {"kind": "Question", "text": "create a two-page decision memo comparing up to three real options for [decision]. "}, {"kind": "Output", "text": "Cover cost when supported, timing, benefits as assumptions rather than results, downside, reversibility and evidence gaps. "}, {"kind": "Judgement", "text": "Recommend the next decision and three gates; say what would change your recommendation. If fewer than three options are supported, do not invent more. Cite sources. "}, {"kind": "Boundary", "text": "Do not send anything, post messages, book meetings, or change source records."}]}, {"title": "Operating review", "fields": [{"key": "initiative", "label": "Initiative", "token": "initiative", "hint": "Name the initiative or business program."}, {"key": "range", "label": "Explicit date range", "token": "explicit date range", "hint": "Use explicit start and end dates."}, {"key": "sources", "label": "Named accessible meeting notes, files or threads", "token": "named accessible meeting notes, files or threads", "hint": "Identify the specific materials Cowork should use."}], "portions": [{"kind": "Question", "text": "For [initiative] during [explicit date range], "}, {"kind": "Input", "text": "use [named accessible meeting notes, files or threads] "}, {"kind": "Output", "text": "to create a new Excel executive operating-review pack with Decisions, Actions and Risks sheets. Show what changed, supported owners or Unassigned, dates or Not specified, status, dependencies, approvals and source references. Add a five-bullet leadership update on a Communications sheet. "}, {"kind": "Judgement", "text": "Flag missing or conflicting evidence. "}, {"kind": "Boundary", "text": "Do not evaluate individual employee performance. Do not send anything, post messages, book meetings, or change source records."}]}];
+const values = templates.map(() => Object.create(null));
+let active = 0;
+let copying = false;
+let copied = false;
+const fields = document.getElementById('fields');
+const portions = document.getElementById('portions');
+const copyButton = document.getElementById('copy');
+const status = document.getElementById('copy-status');
+const manual = document.getElementById('manual');
+const manualText = document.getElementById('manual-copy');
+const panel = document.getElementById('prompt-panel');
+const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+
+function interpolate(template, entry, text) {
+  return text.replace(/\[([^\]]+)\]/g, (match, token) => {
+    const field = template.fields.find(item => item.token === token);
+    return field ? (entry[field.key] || '').trim() || match : match;
+  });
+}
+function buildPrompt(index) {
+  const template = templates[index];
+  return template.portions.map(portion => interpolate(template, values[index], portion.text)).join('');
+}
+function isFilled(index) {
+  return templates[index].fields.every(field => Boolean((values[index][field.key] || '').trim()));
+}
+function updatePreview() {
+  const template = templates[active];
+  const paragraphs = portions.querySelectorAll('p');
+  template.portions.forEach((portion, index) => {
+    paragraphs[index].textContent = interpolate(template, values[active], portion.text).trim();
+  });
+  copyButton.disabled = copying || !isFilled(active);
+  copyButton.textContent = copying ? 'Copying…' : copied ? 'Copied to clipboard' : 'Copy prompt';
+  if (!copying && !copied) {
+    status.textContent = isFilled(active) ? 'Copy includes the prompt text, without the colored labels.' : 'Fill in all fields before copying.';
+  }
+  manualText.value = buildPrompt(active);
+}
+function renderPrompt(index) {
+  active = index;
+  copied = false;
+  manual.hidden = true;
+  fields.replaceChildren();
+  portions.replaceChildren();
+  panel.setAttribute('aria-labelledby', 'tab-' + index);
+  tabs.forEach((tab, tabIndex) => {
+    tab.setAttribute('aria-selected', String(tabIndex === index));
+    tab.tabIndex = tabIndex === index ? 0 : -1;
+  });
+  templates[index].fields.forEach(field => {
+    const wrap = document.createElement('div');
+    wrap.className = 'field';
+    const id = 'field-' + index + '-' + field.key;
+    const label = document.createElement('label');
+    label.htmlFor = id;
+    label.textContent = field.label;
+    const textarea = document.createElement('textarea');
+    textarea.id = id;
+    textarea.name = field.key;
+    textarea.rows = 3;
+    textarea.required = true;
+    textarea.spellcheck = false;
+    textarea.value = values[index][field.key] || '';
+    textarea.setAttribute('autocomplete', 'off');
+    textarea.setAttribute('aria-describedby', id + '-hint');
+    const hint = document.createElement('p');
+    hint.id = id + '-hint';
+    hint.className = 'hint';
+    hint.textContent = field.hint;
+    textarea.addEventListener('input', () => {
+      values[index][field.key] = textarea.value;
+      copied = false;
+      manual.hidden = true;
+      updatePreview();
+    });
+    wrap.append(label, textarea, hint);
+    fields.append(wrap);
+  });
+  templates[index].portions.forEach(portion => {
+    const wrap = document.createElement('div');
+    wrap.className = 'portion';
+    wrap.dataset.kind = portion.kind;
+    const badge = document.createElement('span');
+    badge.className = 'badge';
+    badge.dataset.kind = portion.kind;
+    badge.textContent = portion.kind;
+    const paragraph = document.createElement('p');
+    wrap.append(badge, paragraph);
+    portions.append(wrap);
+  });
+  updatePreview();
+}
+function lockControls(locked) {
+  fields.querySelectorAll('textarea').forEach(field => { field.disabled = locked; });
+  tabs.forEach(tab => { tab.disabled = locked; });
+}
+async function copyPrompt() {
+  if (copying || !isFilled(active)) return;
+  copying = true;
+  copied = false;
+  const prompt = buildPrompt(active);
+  lockControls(true);
+  manual.hidden = true;
+  updatePreview();
+  let succeeded = false;
+  try {
+    if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') throw new Error('Unavailable');
+    await navigator.clipboard.writeText(prompt);
+    succeeded = true;
+  } catch {
+    manualText.value = prompt;
+    manual.hidden = false;
+    manualText.focus();
+    manualText.select();
+    try { succeeded = document.execCommand('copy'); } catch { succeeded = false; }
+  } finally {
+    copying = false;
+    copied = succeeded;
+    lockControls(false);
+    updatePreview();
+  }
+  if (succeeded) {
+    manual.hidden = true;
+    status.textContent = 'Copied. Paste your prompt into Cowork.';
+    copyButton.focus();
+  } else {
+    manual.hidden = false;
+    status.textContent = 'Clipboard access is blocked. The prompt below is selected; press Ctrl+C (Windows) or Command+C (Mac), then paste into Cowork.';
+    manualText.focus();
+    manualText.select();
+  }
+}
+tabs.forEach((tab, index) => {
+  tab.addEventListener('click', () => { if (!copying) renderPrompt(index); });
+  tab.addEventListener('keydown', event => {
+    const keys = ['ArrowRight', 'ArrowLeft', 'Home', 'End'];
+    if (copying || !keys.includes(event.key)) return;
+    event.preventDefault();
+    const target = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+    renderPrompt(target);
+    tabs[target].focus();
+  });
+});
+copyButton.addEventListener('click', copyPrompt);
+manualText.addEventListener('focus', () => manualText.select());
+document.getElementById('context-form').addEventListener('submit', event => event.preventDefault());
+renderPrompt(0);
+</script></body>
+</html>
