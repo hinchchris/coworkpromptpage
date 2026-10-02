@@ -1,4 +1,5 @@
 #CoworkPromptPage
+# force new run
 name: Azure Static Web Apps CI/CD
 
 on:
